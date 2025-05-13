@@ -16,7 +16,6 @@ module Database.Selda.Backend
   , module SqlType
   ) where
 import Control.Monad ( unless )
-import Control.Monad.Catch ( mask_ )
 import Control.Monad.IO.Class ( MonadIO(..) )
 import Data.IORef ( atomicModifyIORef' )
 import Database.Selda.Backend.Internal
@@ -78,6 +77,7 @@ import Database.Selda.Types
       rawTableName,
       mkColName,
       mkTableName )
+import Control.Exception (mask_)
 
 -- | Close a reusable Selda connection.
 --   Closing a connection while in use is undefined.

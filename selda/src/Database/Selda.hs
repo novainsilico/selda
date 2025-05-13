@@ -99,10 +99,9 @@ module Database.Selda
   , first, second, third, fourth, fifth
   
     -- * Useful re-exports
-  , MonadIO, MonadMask, liftIO
+  , MonadIO, liftIO
   , Text, Day, TimeOfDay, UTCTime, UUID
   ) where
-import Control.Monad.Catch (MonadMask)
 import Data.Typeable ( Typeable, eqT, (:~:)(..) )
 import Database.Selda.Backend.Internal
     ( SqlType(..),

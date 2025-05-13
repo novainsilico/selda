@@ -77,13 +77,13 @@ library
   build-depends:
       base      
     , bytestring
-    , exceptions
     , mtl       
     , text      
     , time      
     , containers
     , random    
     , uuid-types
+    , unliftio
   hs-source-dirs:
     src
   default-language:

@@ -16,7 +16,6 @@ import qualified Data.Text as T
 import Database.Selda.Backend hiding (toText)
 import Database.Selda.JSON
 import Database.Selda.Unsafe as Selda (cast, operator)
-import Control.Monad.Catch
 import Control.Monad.IO.Class
 
 #ifndef __HASTE__
@@ -30,6 +29,8 @@ import Data.Text.Encoding
 import Database.Selda.PostgreSQL.Encoding
 import Database.PostgreSQL.LibPQ hiding (user, pass, db, host)
 #endif
+import UnliftIO (MonadUnliftIO(..))
+import UnliftIO.Exception
 
 data PG
 
@@ -118,7 +119,7 @@ pgConnString PGConnectionString{..} = encodeUtf8 pgConnectionString
 -- | Perform the given computation over a PostgreSQL database.
 --   The database connection is guaranteed to be closed when the computation
 --   terminates.
-withPostgreSQL :: (MonadIO m, MonadMask m)
+withPostgreSQL :: (MonadIO m, MonadUnliftIO m)
                => PGConnectInfo
                -> SeldaT PG m a
                -> m a
@@ -131,11 +132,11 @@ withPostgreSQL ci m = bracket (pgOpen ci) seldaClose (runSeldaT m)
 -- | Open a new PostgreSQL connection. The connection will persist across
 --   calls to 'runSeldaT', and must be explicitly closed using 'seldaClose'
 --   when no longer needed.
-pgOpen :: (MonadIO m, MonadMask m) => PGConnectInfo -> m (SeldaConnection PG)
+pgOpen :: (MonadIO m, MonadUnliftIO m) => PGConnectInfo -> m (SeldaConnection PG)
 pgOpen ci = pgOpen' (pgSchema ci) (pgConnString ci)
 
 pgPPConfig :: PPConfig
-pgOpen' :: (MonadIO m, MonadMask m)
+pgOpen' :: (MonadIO m, MonadUnliftIO m)
         => Maybe T.Text
         -> ByteString
         -> m (SeldaConnection PG)
@@ -159,7 +160,7 @@ pgOpen' schema connStr =
       nope -> do
         connFailed nope
     where
-      connFailed f = throwM $ DbError $ unwords
+      connFailed f = throwIO $ DbError $ unwords
         [ "unable to connect to postgres server: " ++ show f
         ]
 
@@ -358,7 +359,7 @@ pgGetTableInfo c tbl = do
         isAuto (SqlBool x) = x
         isAuto _           = False
     describe _ _ results =
-      throwM $ SqlError $ "bad result from table info query: " ++ show results
+      throwIO $ SqlError $ "bad result from table info query: " ++ show results
 
 pgQueryRunner :: Connection -> Bool -> T.Text -> [Param] -> IO (Either Int64 (Int, [[SqlValue]]))
 pgQueryRunner c return_lastid q ps = do
@@ -433,12 +434,12 @@ unlessError c msg mres m = do
         FatalError    -> doError c msg
         NonfatalError -> doError c msg
         _             -> m res
-    Nothing -> throwM $ DbError "unable to submit query to server"
+    Nothing -> throwIO $ DbError "unable to submit query to server"
 
 doError :: Connection -> String -> IO a
 doError c msg = do
   me <- errorMessage c
-  throwM $ SqlError $ concat
+  throwIO $ SqlError $ concat
     [ msg
     , maybe "" ((": " ++) . BS.unpack) me
     ]

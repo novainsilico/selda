@@ -42,14 +42,9 @@ import Database.Selda.Types (fromTableName)
 import Data.Proxy ( Proxy(..) )
 import Data.Text (Text)
 import Control.Monad ( void )
-import Control.Monad.Catch
-    ( bracket_,
-      onException,
-      try,
-      MonadCatch,
-      MonadMask(mask),
-      MonadThrow(throwM) )
 import Control.Monad.IO.Class ( MonadIO(..) )
+import UnliftIO.Exception
+import UnliftIO (MonadUnliftIO(..))
 
 -- | Run a query within a Selda monad. In practice, this is often a 'SeldaT'
 --   transformer on top of some other monad.
@@ -111,13 +106,13 @@ insert t cs = withBackend $ \b -> do
 --
 --   Like 'insert', if even one of the inserted rows would cause a constraint
 --   violation, the whole insert operation fails.
-tryInsert :: (MonadSelda m, MonadCatch m, Relational a) => Table a -> [a] -> m Bool
+tryInsert :: (MonadSelda m, MonadUnliftIO m, Relational a) => Table a -> [a] -> m Bool
 tryInsert tbl row = do
   mres <- try $ insert tbl row
   case mres of
     Right _           -> return True
     Left (SqlError _) -> return False
-    Left e            -> throwM e
+    Left e            -> throwIO e
 
 -- | Attempt to perform the given update. If no rows were updated, insert the
 --   given row.
@@ -128,7 +123,7 @@ tryInsert tbl row = do
 --
 --   Note that this may perform two separate queries: one update, potentially
 --   followed by one insert.
-upsert :: (MonadSelda m, MonadMask m, Relational a)
+upsert :: (MonadSelda m, MonadUnliftIO m, Relational a)
        => Table a
        -> (Row (Backend m) a -> Col (Backend m) Bool)
        -> (Row (Backend m) a -> Row (Backend m) a)
@@ -147,7 +142,7 @@ upsert tbl check upd rows = transaction $ do
 --   If called on a table which doesn't have an auto-incrementing primary key,
 --   @Just id@ is always returned on successful insert, where @id@ is a row
 --   identifier guaranteed to not match any row in any table.
-insertUnless :: (MonadSelda m, MonadMask m, Relational a)
+insertUnless :: (MonadSelda m, MonadUnliftIO m, Relational a)
              => Table a
              -> (Row (Backend m) a -> Col (Backend m) Bool)
              -> [a]
@@ -156,7 +151,7 @@ insertUnless tbl check rows = upsert tbl check id rows
 
 -- | Like 'insertUnless', but performs the insert when at least one row matches
 --   the predicate.
-insertWhen :: (MonadSelda m, MonadMask m, Relational a)
+insertWhen :: (MonadSelda m, MonadUnliftIO m, Relational a)
            => Table a
            -> (Row (Backend m) a -> Col (Backend m) Bool)
            -> [a]
@@ -258,7 +253,7 @@ tryDropTable = void . flip exec [] . compileDropTable Ignore
 --   If an exception is raised during its execution, the entire transaction
 --   will be rolled back and the exception re-thrown, even if the exception
 --   is caught and handled within the transaction.
-transaction :: (MonadSelda m, MonadMask m) => m a -> m a
+transaction :: (MonadSelda m, MonadUnliftIO m) => m a -> m a
 transaction m = mask $ \restore -> transact $ do
   void $ exec "BEGIN TRANSACTION" []
   x <- restore m `onException` void (exec "ROLLBACK" [])
@@ -276,7 +271,7 @@ transaction m = mask $ \restore -> transact $ do
 --
 --   Using this should be avoided in favor of deferred foreign key
 --   constraints. See SQL backend documentation for deferred constraints.
-withoutForeignKeyEnforcement :: (MonadSelda m, MonadMask m) => m a -> m a
+withoutForeignKeyEnforcement :: (MonadSelda m, MonadUnliftIO m) => m a -> m a
 withoutForeignKeyEnforcement m = withBackend $ \b -> do
   bracket_ (liftIO $ disableForeignKeys b True)
            (liftIO $ disableForeignKeys b False)

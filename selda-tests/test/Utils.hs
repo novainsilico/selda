@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Utility functions that are useful for all tests.
 module Utils where
-import Control.Monad.Catch
 import Data.Text (unpack)
 import Database.Selda
 import Database.Selda.Debug (compile)
 import Test.HUnit
+import UnliftIO.Exception
 
 -- | Assert that the given computation should fail.
 assertFail :: SeldaM b a -> SeldaM b ()

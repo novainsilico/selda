@@ -5,7 +5,6 @@ module Database.Selda.Migrations
   , migrate, migrateM, migrateAll, autoMigrate, autoMigrateLog
   ) where
 import Control.Monad (void, when)
-import Control.Monad.Catch ( MonadMask, MonadThrow(..) )
 import Database.Selda.Backend.Internal
     ( MonadSelda(..), SeldaBackend(runStmt), withBackend )
 import Database.Selda.Column ( Row )
@@ -26,6 +25,8 @@ import Database.Selda.Types (mkTableName, fromTableName, rawTableName)
 import Database.Selda.Validation
     ( TableDiff(TableOK), validateTable, validateSchema, diffTable )
 import Prelude hiding (log)
+import UnliftIO (MonadUnliftIO(..))
+import UnliftIO.Exception
 -- | Wrapper for user with 'migrateAll', enabling multiple migrations to be
 --   packed into the same list:
 --
@@ -52,7 +53,7 @@ type MigrationStep backend = [Migration backend]
 --
 --   The migration is performed as a transaction, ensuring that either the
 --   entire migration passes, or none of it does.
-migrate :: (MonadSelda m, MonadMask m, Relational a, Relational b)
+migrate :: (MonadSelda m, MonadUnliftIO m, Relational a, Relational b)
         => Table a -- ^ Table to migrate from.
         -> Table b -- ^ Table to migrate to.
         -> (Row (Backend m) a -> Row (Backend m) b)
@@ -62,20 +63,20 @@ migrate t1 t2 upg = migrateM t1 t2 (pure . upg)
 
 -- | Like 'migrate', but allows the column upgrade to access
 --   the entire database.
-migrateM :: (MonadSelda m, MonadMask m, Relational a, Relational b)
+migrateM :: (MonadSelda m, MonadUnliftIO m, Relational a, Relational b)
          => Table a
          -> Table b
          -> (Row (Backend m) a -> Query (Backend m) (Row (Backend m) b))
          -> m ()
 migrateM t1 t2 upg = migrateAll True [Migration t1 t2 upg]
 
-wrap :: (MonadSelda m, MonadMask m) => Bool -> m a -> m a
+wrap :: (MonadSelda m, MonadUnliftIO m) => Bool -> m a -> m a
 wrap enforceFKs
   | enforceFKs = transaction
   | otherwise  = withoutForeignKeyEnforcement
 
 -- | Perform all given migrations as a single transaction.
-migrateAll :: (MonadSelda m, MonadMask m)
+migrateAll :: (MonadSelda m, MonadUnliftIO m)
            => Bool -- ^ Enforce foreign keys during migration?
            -> MigrationStep (Backend m) -- ^ Migration step to perform.
            -> m ()
@@ -95,13 +96,13 @@ migrateAll fks =
 --   indexed columns are not taken into account. Two columns @c1@ and @c2@ are
 --   considered to be identical if @c1@ is indexed with index method @foo@ and
 --   @c2@ is indexed with index method @bar@.
-autoMigrate :: (MonadSelda m, MonadMask m)
+autoMigrate :: (MonadSelda m, MonadUnliftIO m)
             => Bool -- ^ Enforce foreign keys during migration?
             -> [MigrationStep (Backend m)] -- ^ Migration steps to perform.
             -> m ()
 autoMigrate b s = autoMigrateLog b s (const $ return ())
 
-autoMigrateLog :: (MonadSelda m, MonadMask m)
+autoMigrateLog :: (MonadSelda m, MonadUnliftIO m)
                => Bool -- ^ Enforce foreign keys during migration?
                -> [MigrationStep (Backend m)] -- ^ Migration steps to perform.
                -> (String -> m ()) -- ^ To log the different diffs
@@ -126,14 +127,14 @@ autoMigrateLog fks steps log = wrap fks $ do
           log' $ "Diff when checking current state against start state of step " <> show n <> ":\n" <> show diffs
           (step:) <$> calculateSteps (n-1) log ss
     calculateSteps _ _ [] = do
-      throwM $ ValidationError "no starting state matches the current state of the database"
+      throwIO $ ValidationError "no starting state matches the current state of the database"
 
     performStep = mapM_ (\(Migration t1 t2 upg) -> migrateInternal t1 t2 upg)
 
 -- | Workhorse for migration.
 --   Is NOT performed as a transaction, so exported functions need to
 --   properly wrap calls this function.
-migrateInternal :: (MonadSelda m, MonadThrow m, Relational a, Relational b)
+migrateInternal :: (MonadSelda m, MonadUnliftIO m, Relational a, Relational b)
                 => Table a
                 -> Table b
                 -> (Row (Backend m) a -> Query (Backend m) (Row (Backend m) b))

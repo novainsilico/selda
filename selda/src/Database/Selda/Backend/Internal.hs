@@ -40,8 +40,6 @@ import Database.Selda.SQL.Print.Config
 import Database.Selda.Types (TableName, ColName)
 import Data.Int (Int64)
 import Control.Concurrent ( newMVar, putMVar, takeMVar, MVar )
-import Control.Monad.Catch
-    ( Exception, bracket, MonadCatch, MonadMask, MonadThrow(..) )
 import Control.Monad.IO.Class ( MonadIO(..) )
 import Control.Monad.Reader
     ( MonadTrans(..), ReaderT(..), MonadReader(ask) )
@@ -52,8 +50,9 @@ import Data.IORef
     ( IORef, atomicModifyIORef', newIORef, readIORef )
 import Data.Text (Text)
 import System.IO.Unsafe (unsafePerformIO)
-
-
+import Control.Exception (Exception, throwIO)
+import UnliftIO.Exception (bracket)
+import UnliftIO (MonadUnliftIO(..))
 
 
 -- | Uniquely identifies some particular backend.
@@ -280,7 +279,7 @@ withBackend m = withConnection (m . connBackend)
 -- | Monad transformer adding Selda SQL capabilities.
 newtype SeldaT b m a = S {unS :: ReaderT (SeldaConnection b) m a}
   deriving ( Functor, Applicative, Monad, MonadIO
-           , MonadThrow, MonadCatch, MonadMask , MonadFail
+           , MonadFail, MonadUnliftIO
            )
 
 instance (MonadIO m) => MonadSelda (SeldaT b m) where
@@ -295,7 +294,7 @@ type SeldaM b = SeldaT b IO
 
 -- | Run a Selda transformer. Backends should use this to implement their
 --   @withX@ functions.
-runSeldaT :: (MonadIO m, MonadMask m)
+runSeldaT :: (MonadIO m, MonadUnliftIO m)
           => SeldaT b m a
           -> SeldaConnection b
           -> m a
@@ -307,5 +306,5 @@ runSeldaT m c =
     go = do
       closed <- liftIO $ readIORef (connClosed c)
       when closed $ do
-        liftIO $ throwM $ DbError "runSeldaT called with a closed connection"
+        liftIO $ throwIO $ DbError "runSeldaT called with a closed connection"
       runReaderT (unS m) c

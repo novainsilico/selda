@@ -12,7 +12,6 @@ import Database.Selda.SQLite.Parser
 import Data.Maybe (fromJust)
 #ifndef __HASTE__
 import Control.Monad (void, when, unless)
-import Control.Monad.Catch
 import Data.ByteString.Lazy (toStrict)
 import Data.Dynamic
 import Data.Int (Int64)
@@ -22,13 +21,15 @@ import Data.UUID.Types (toByteString)
 import Database.SQLite3
 import System.Directory (makeAbsolute)
 #endif
+import UnliftIO (MonadUnliftIO(..))
+import UnliftIO.Exception
 
 data SQLite
 
 -- | Open a new connection to an SQLite database.
 --   The connection is reusable across calls to `runSeldaT`, and must be
 --   explicitly closed using 'seldaClose' when no longer needed.
-sqliteOpen :: (MonadIO m, MonadMask m) => FilePath -> m (SeldaConnection SQLite)
+sqliteOpen :: (MonadIO m, MonadUnliftIO m) => FilePath -> m (SeldaConnection SQLite)
 #ifdef __HASTE__
 sqliteOpen _ = error "sqliteOpen called in JS context"
 #else
@@ -37,7 +38,7 @@ sqliteOpen file = do
     edb <- try $ liftIO $ open (pack file)
     case edb of
       Left e@(SQLError{}) -> do
-        throwM (DbError (show e))
+        throwIO (DbError (show e))
       Right db -> flip onException (liftIO (close db)) . restore $ do
         absFile <- liftIO $ pack <$> makeAbsolute file
         let backend = sqliteBackend db
@@ -47,7 +48,7 @@ sqliteOpen file = do
 
 -- | Perform the given computation over an SQLite database.
 --   The database is guaranteed to be closed when the computation terminates.
-withSQLite :: (MonadIO m, MonadMask m) => FilePath -> SeldaT SQLite m a -> m a
+withSQLite :: (MonadIO m, MonadUnliftIO m) => FilePath -> SeldaT SQLite m a -> m a
 #ifdef __HASTE__
 withSQLite _ _ = return $ error "withSQLite called in JS context"
 
@@ -151,7 +152,7 @@ sqliteGetTableInfo db tbl = do
             ]
         }
     describe _ _ _ result = do
-      throwM $ SqlError $ "bad result from PRAGMA table_info: " ++ show result
+      throwIO $ SqlError $ "bad result from PRAGMA table_info: " ++ show result
 
 disableFKs :: Database -> Bool -> IO ()
 disableFKs db disable = do
@@ -166,7 +167,7 @@ sqlitePrepare :: Database -> Text -> IO Dynamic
 sqlitePrepare db qry = do
   eres <- try $ prepare db qry
   case eres of
-    Left e@(SQLError{}) -> throwM (SqlError (show e))
+    Left e@(SQLError{}) -> throwIO (SqlError (show e))
     Right r             -> return $ toDyn r
 
 sqliteRunPrepared :: Database -> Dynamic -> [Param] -> IO (Int, [[SqlValue]])
@@ -177,7 +178,7 @@ sqliteRunPrepared db hdl params = do
       clearBindings stm
       reset stm
   case eres of
-    Left e@(SQLError{}) -> throwM (SqlError (show e))
+    Left e@(SQLError{}) -> throwIO (SqlError (show e))
     Right res           -> return (snd res)
 
 sqliteQueryRunner :: Database -> QueryRunner (Int64, (Int, [[SqlValue]]))
@@ -187,7 +188,7 @@ sqliteQueryRunner db qry params = do
       sqliteRunStmt db stm params `finally` do
         finalize stm
     case eres of
-      Left e@(SQLError{}) -> throwM (SqlError (show e))
+      Left e@(SQLError{}) -> throwIO (SqlError (show e))
       Right res           -> return res
 
 sqliteRunStmt :: Database -> Statement -> [Param] -> IO (Int64, (Int, [[SqlValue]]))

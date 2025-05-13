@@ -4,7 +4,6 @@
 -- | Tests that modify the database.
 module Tests.Mutable (mutableTests) where
 import Control.Concurrent
-import Control.Monad.Catch
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as Lazy (ByteString)
 import Data.List hiding (groupBy, insert)
@@ -23,6 +22,7 @@ import Data.UUID.Types (nil)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup
 #endif
+import UnliftIO.Exception
 
 mutableTests :: (SeldaM b () -> IO ()) -> Test
 mutableTests freshEnv = test

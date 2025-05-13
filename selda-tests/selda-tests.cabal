@@ -43,6 +43,7 @@ test-suite selda-testsuite
     , time
     , random
     , uuid-types
+   , unliftio
   if flag(postgres)
     other-modules: PGConnectInfo, Tests.PGConnectionString
     build-depends: selda-postgresql

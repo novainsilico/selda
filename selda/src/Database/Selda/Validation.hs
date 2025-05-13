@@ -7,7 +7,6 @@ module Database.Selda.Validation
   , describeTable, diffTable, diffTables
   , validateTable, validateSchema
   ) where
-import Control.Monad.Catch ( MonadThrow(..) )
 import Data.List ((\\))
 import Data.Maybe (catMaybes)
 import Data.Text (pack, unpack, intercalate)
@@ -29,6 +28,8 @@ import Database.Selda.Backend.Internal
 import Database.Selda.Types ( fromColName, fromTableName )
 import Database.Selda.Table.Type (tableCols)
 import Database.Selda.Table.Validation (ValidationError (..), validateOrThrow)
+import UnliftIO(MonadUnliftIO(..))
+import UnliftIO.Exception
 
 -- | Are the given types compatible?
 isCompatibleWith :: SqlTypeRep -> SqlTypeRep -> Bool
@@ -42,20 +43,20 @@ isCompatibleWith a b         = a == b
 --   database.
 --   Throws a 'ValidationError' if the schema does not validate, or if
 --   inconsistencies were found.
-validateTable :: (MonadSelda m, MonadThrow m) => Table a -> m ()
+validateTable :: (MonadSelda m, MonadUnliftIO m) => Table a -> m ()
 validateTable t = do
   validateSchema t
   diffs <- diffTable t
   case diffs of
     TableOK -> return ()
-    errors  -> throwM $ ValidationError $ concat
+    errors  -> throwIO $ ValidationError $ concat
       [ "error validating table ", unpack (fromTableName (tableName t)), ":\n"
       , show errors
       ]
 
 -- | Ensure that the schema of the given table is valid.
 --   Does not ensure consistency with the current database.
-validateSchema :: MonadThrow m => Table a -> m ()
+validateSchema :: MonadUnliftIO m => Table a -> m ()
 validateSchema t = validateOrThrow (tableName t) (tableCols t) `seq` return ()
 
 -- | A description of the difference between a schema and its corresponding

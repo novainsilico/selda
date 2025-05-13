@@ -2,7 +2,6 @@
 -- | Schema validation tests.
 module Tests.Validation (validationTests) where
 import Control.Concurrent
-import Control.Monad.Catch
 import Data.List hiding (groupBy, insert)
 import Data.Time
 import Database.Selda
@@ -13,6 +12,7 @@ import Database.Selda.Backend
 import Test.HUnit
 import Utils
 import Tables
+import UnliftIO.Exception
 
 validationTests :: (SeldaM b () -> IO ()) -> [Test]
 validationTests freshEnv =

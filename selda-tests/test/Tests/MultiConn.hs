@@ -4,11 +4,11 @@ module Tests.MultiConn (multiConnTests) where
 import Database.Selda
 import Database.Selda.Backend
 import Control.Concurrent
-import Control.Monad.Catch
 import Data.IORef
 import Test.HUnit
 import Utils
 import Tables
+import UnliftIO.Exception
 
 multiConnTests :: IO (SeldaConnection b) -> Test
 multiConnTests open = test
