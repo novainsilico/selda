@@ -9,8 +9,8 @@ build-type:    Simple
 executable selda-changelog
   main-is: ChangeLog.hs
   build-depends:
-    base     >=4.8 && <5,
-    time     >=1.5 && <1.10,
-    filepath >=1.4 && <1.5,
-    process  >=1.5 && <1.7
+    base,
+    time,  
+    filepath,
+    process
   default-language: Haskell2010

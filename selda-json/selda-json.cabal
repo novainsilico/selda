@@ -17,10 +17,10 @@ library
   exposed-modules:
     Database.Selda.JSON
   build-depends:
-      aeson      >=1.0  && <2.2
-    , base       >=4.9  && <5
-    , bytestring >=0.10 && <0.12
-    , selda      >=0.4  && <0.6
-    , text       >=1.0  && <2.1
+      aeson   
+    , base   
+    , bytestring
+    , selda
+    , text
   hs-source-dirs:      src
   default-language:    Haskell2010
