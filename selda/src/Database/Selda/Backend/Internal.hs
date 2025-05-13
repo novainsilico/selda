@@ -283,7 +283,7 @@ newtype SeldaT b m a = S {unS :: ReaderT (SeldaConnection b) m a}
            , MonadThrow, MonadCatch, MonadMask , MonadFail
            )
 
-instance (MonadIO m, MonadMask m) => MonadSelda (SeldaT b m) where
+instance (MonadIO m) => MonadSelda (SeldaT b m) where
   type Backend (SeldaT b m) = b
   withConnection m = S ask >>= m
 
