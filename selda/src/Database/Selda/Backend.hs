@@ -45,8 +45,7 @@ import Database.Selda.Backend.Internal
       withBackend,
       runSeldaT )
 import Database.Selda.SqlType as SqlType
-    ( UUID,
-      UUID'(..),
+    ( UUID'(..),
       ID(..),
       RowID,
       SqlValue(..),

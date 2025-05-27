@@ -33,6 +33,7 @@ library
     , selda-json
     , text
     , unliftio
+    , time
   if !flag(haste)
     build-depends:
         postgresql-binary

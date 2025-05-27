@@ -15,7 +15,7 @@ import Control.Monad (void, when, unless)
 import Data.ByteString.Lazy (toStrict)
 import Data.Dynamic
 import Data.Int (Int64)
-import Data.Text as Text (pack, toLower, take, intercalate)
+import Data.Text as Text (pack, toLower, take, intercalate, Text)
 import Data.Time (FormatTime, formatTime, defaultTimeLocale)
 import Data.UUID.Types (toByteString)
 import Database.SQLite3
@@ -23,6 +23,7 @@ import System.Directory (makeAbsolute)
 #endif
 import UnliftIO (MonadUnliftIO(..))
 import UnliftIO.Exception
+import Control.Monad.IO.Class (MonadIO (..))
 
 data SQLite
 

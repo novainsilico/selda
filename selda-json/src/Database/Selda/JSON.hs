@@ -1,11 +1,12 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
 module Database.Selda.JSON (JSONBackend (..)) where
-import Database.Selda (Text, Col, Inner)
+import Database.Selda (Col, Inner)
 import Database.Selda.Backend
 import Database.Selda.Unsafe (sink, sink2)
 import Data.Aeson (Value (Null), encode, decode', FromJSON (..), ToJSON (..))
 import qualified Data.ByteString.Lazy as BSL (ByteString, fromStrict, toStrict)
 import Data.Text.Encoding (encodeUtf8)
+import Data.Text (Text)
 
 class JSONValue a
 instance JSONValue Value

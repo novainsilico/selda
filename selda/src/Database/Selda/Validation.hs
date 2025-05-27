@@ -9,11 +9,9 @@ module Database.Selda.Validation
   ) where
 import Data.List ((\\))
 import Data.Maybe (catMaybes)
-import Data.Text (pack, unpack, intercalate)
+import Data.Text (pack, unpack, intercalate, Text)
 import Database.Selda
-    ( Text,
-      MonadIO(liftIO),
-      TableName,
+    ( TableName,
       ColName,
       Table(..),
       MonadSelda )
@@ -30,6 +28,7 @@ import Database.Selda.Table.Type (tableCols)
 import Database.Selda.Table.Validation (ValidationError (..), validateOrThrow)
 import UnliftIO(MonadUnliftIO(..))
 import UnliftIO.Exception
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 -- | Are the given types compatible?
 isCompatibleWith :: SqlTypeRep -> SqlTypeRep -> Bool

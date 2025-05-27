@@ -97,10 +97,6 @@ module Database.Selda
     -- * Tuple convenience functions
   , Tup, Head
   , first, second, third, fourth, fifth
-  
-    -- * Useful re-exports
-  , MonadIO, liftIO
-  , Text, Day, TimeOfDay, UTCTime, UUID
   ) where
 import Data.Typeable ( Typeable, eqT, (:~:)(..) )
 import Database.Selda.Backend.Internal
@@ -110,7 +106,7 @@ import Database.Selda.Backend.Internal
       MonadSelda(Backend),
       SeldaError(..) )
 import Database.Selda.SqlType
-    ( UUID,
+    ( 
       UUID'(..),
       ID(..),
       RowID,
@@ -231,6 +227,7 @@ import Unsafe.Coerce ( unsafeCoerce )
 import System.Random (randomIO)
 import GHC.TypeLits as TL
     ( TypeError, ErrorMessage(Text, (:<>:), ShowType, (:$$:)) )
+import Data.UUID.Types (UUID)
 
 -- | Any column type that can be used with the 'min_' and 'max_' functions.
 class SqlType a => SqlOrd a

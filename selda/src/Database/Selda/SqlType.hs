@@ -3,7 +3,7 @@
 -- | Types representable as columns in Selda's subset of SQL.
 module Database.Selda.SqlType
   ( SqlType (..), SqlEnum (..)
-  , Lit (..), UUID, UUID', RowID, ID, SqlValue (..), SqlTypeRep (..)
+  , Lit (..), UUID', RowID, ID, SqlValue (..), SqlTypeRep (..)
   , invalidRowId, isInvalidRowId, toRowId, fromRowId
   , fromId, toId, invalidId, isInvalidId, untyped
   , compLit, litType
