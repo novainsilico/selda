@@ -6,6 +6,7 @@ import Database.Selda
 import Database.Selda.Debug (compile)
 import Test.HUnit
 import UnliftIO.Exception
+import Control.Monad.IO.Class (MonadIO(..))
 
 -- | Assert that the given computation should fail.
 assertFail :: SeldaM b a -> SeldaM b ()

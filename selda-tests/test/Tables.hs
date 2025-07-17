@@ -6,6 +6,7 @@
 module Tables where
 import Database.Selda
 import Database.Selda.MakeSelectors
+import Data.Text (Text)
 
 data Person = Person
   { name :: Text

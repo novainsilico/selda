@@ -13,6 +13,8 @@ import Test.HUnit
 import Utils
 import Tables
 import UnliftIO.Exception
+import Data.Text (Text)
+import Control.Monad.IO.Class (MonadIO(..))
 
 validationTests :: (SeldaM b () -> IO ()) -> [Test]
 validationTests freshEnv =

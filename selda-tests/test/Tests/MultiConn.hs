@@ -9,6 +9,8 @@ import Test.HUnit
 import Utils
 import Tables
 import UnliftIO.Exception
+import Data.Text (Text)
+import Control.Monad.IO.Class (MonadIO(..))
 
 multiConnTests :: IO (SeldaConnection b) -> Test
 multiConnTests open = test

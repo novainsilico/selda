@@ -12,6 +12,7 @@ import Data.List (sort)
 import Test.HUnit
 import Tables (Person (..), peopleItems)
 import Utils
+import Data.Text (Text)
 
 data JSONPerson = JSONPerson
   { id :: ID JSONPerson

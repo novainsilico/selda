@@ -17,6 +17,7 @@ import Database.Selda.Validation
 import Test.HUnit
 import Utils
 import Tables
+import Data.Text (Text)
 
 queryTests :: (SeldaM b () -> IO ()) -> Test
 queryTests run = test

@@ -18,11 +18,13 @@ import Database.Selda.Unsafe (unsafeSelector, rawStm)
 import Test.HUnit
 import Utils
 import Tables
-import Data.UUID.Types (nil)
+import Data.UUID.Types (nil, UUID)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup
 #endif
 import UnliftIO.Exception
+import Data.Text (Text)
+import Control.Monad.IO.Class (MonadIO(..))
 
 mutableTests :: (SeldaM b () -> IO ()) -> Test
 mutableTests freshEnv = test
