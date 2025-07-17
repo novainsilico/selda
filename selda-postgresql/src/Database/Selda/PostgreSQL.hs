@@ -149,6 +149,8 @@ pgOpen' schema connStr =
     st <- liftIO $ status conn
     case st of
       ConnectionOk -> do
+        -- Disable the NOTICE which pops on stdout and clutter the logs
+        liftIO (disableNoticeReporting conn)
         let backend = pgBackend conn
 
         _ <- liftIO $ runStmt backend "SET client_min_messages TO WARNING;" []
